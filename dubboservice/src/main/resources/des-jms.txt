@@ -1,0 +1,32 @@
+1.topic和queue区别
+①概要：topic发布订阅消息；queue点对点
+②有无状态：topic数据默认不落地，是无状态的；queue数据默认会在mq服务器上以文件形式保存
+③完整性保障：topic并不保证publisher发布的每条数据subscriber都能接收到；queue保证每条数据都能被receiver接收
+④消息是否会丢失：一般来说publisher发布消息到某一个topic时，只有正在监听该topic地址的sub能够接收到消息；如果没有sub在监听，该topic就丢失了；
+             sender发送消息到目标queue，receiver可以异步接收这个queue上的信息，queue上的信息如果暂时没有receiver来取，也不会丢失
+⑤消息发布接收策略：topic一对多的消息发布接收策略，监听同一个topic地址的多个sub都能接收到publisher发送的消息，sub接收完通知mq服务器；
+                一对一的消息发布接收策略，
+               queue一个sender发送的消息，只能有一个receiver接收。recevier接收完后，通知mq服务器已接收，
+               mq服务器对queue里的消息采取删除或其他操作
+Topic和queue的最大区别在于topic是以广播的形式，通知所有在线监听的客户端有新的消息，没有监听的客户端将收不到消息；
+而queue则是以点对点的形式通知多个处于监听状态的客户端中的一个。
+2.topic和queue消息处理效率（topic会发给所有正在监听的sub，queue只发给一个receiver）
+3.消息的pull和push
+①Push方式：由消息中间件主动地将消息推送给消费者；②Pull方式：由消费者主动向消息中间件拉取消息。
+push的一个缺点，如果消费者的处理消息的能力很弱(一条消息需要很长的时间处理)，而消息中间件不断地向消费者Push消息，消费者的缓冲区可能会溢出。
+②prefetch limit 规定了一次可以向消费者Push(推送)多少条消息。
+当推送消息的数量到达了perfetch limit规定的数值时，消费者还没有向消息中间件返回ACK，消息中间件将不再继续向消费者推送消息。
+prefetch limit =0 意味着是pull模式了。
+perfetch limit是“消息预取”的值，这是针对消息中间件如何向消费者发消息 而设置的。与之相关的还有针对 消费者以何种方式向消息中间件返回确认ACK(响应)：
+比如消费者是每次消费一条消息之后就向消息中间件确认呢？还是采用“延迟确认”---即采用批量确认的方式(消费了若干条消息之后，统一再发ACK)。
+③采用哪种模式？
+从是否阻塞来看，消费者有两种方式获取消息。同步方式和异步方式。
+同步方式使用的是ActiveMQMessageConsumer的receive()方法。而异步方式则是采用消费者实现MessageListener接口，监听消息。
+使用同步方式receive()方法获取消息时，prefetch limit即可以设置为0，也可以设置为大于0
+
+prefetch limit为零 意味着：“receive()方法将会首先发送一个PULL指令并阻塞，直到broker端返回消息为止，这也意味着消息只能逐个获取(类似于Request<->Response)”
+
+prefetch limit 大于零 意味着：“broker端将会批量push给client 一定数量的消息(<= prefetch)，client端会把这些消息(unconsumedMessage)放入到本地的队列中，
+只要此队列有消息，那么receive方法将会立即返回，当一定量的消息ACK之后，broker端会继续批量push消息给client端。”
+当使用MessageListener异步获取消息时，prefetch limit必须大于零了。因为，prefetch limit 等于零 意味着消息中间件不会主动给消费者Push消息，
+而此时消费者又用MessageListener被动获取消息(不会主动去轮询消息)。这二者是矛盾的。

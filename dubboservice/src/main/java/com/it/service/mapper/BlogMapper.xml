@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.it.service.mapper.BlogMapper">
+
+    <resultMap id="baseBlog" type="com.it.service.domain.Blog">
+        <id property="id" column="id"/>
+        <result property="message" column="message"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+
+    <insert id="addBlog">
+        INSERT INTO `blog`(message,create_time) VALUES (#{message},#{createTime})
+    </insert>
+    <select id="get" resultMap="baseBlog">
+        select * from `blog` where id = #{id}
+    </select>
+</mapper>

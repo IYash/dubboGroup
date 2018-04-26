@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:amq="http://activemq.apache.org/schema/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+ http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core-5.5.0.xsd" default-autowire="byName">
+
+
+	<amq:connectionFactory id="jmsConnectionFactory" brokerURL="${jms_server}" />  <!-- vst ActiveMQ connectionFactory -->
+	<amq:queue name="TEST" physicalName="ActiveMQ.TEST.${jms_node}" />
+
+	<!-- vst order message start -->
+
+	<bean id="testTopicListenerContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer"> <!-- 消息监听 TOPIC 模式 -->
+		<property name="connectionFactory" ref="jmsConnectionFactory" />
+		<property name="destination" ref="TEST" />
+		<property name="messageListener" ref="testMessageListener" />
+	</bean>
+	<!-- 订阅 --> 
+	<bean id="testMessageListener" class="org.springframework.jms.listener.adapter.MessageListenerAdapter">
+		<constructor-arg ref="testTopicMessageConsumer" />
+		<property name="defaultListenerMethod" value="receive" /> 
+	</bean> 
+	<!-- 消息接收 --> 
+	<bean id="testTopicMessageConsumer" class="com.it.jms.TopicMessageConsumer">
+		<property name="destName"><value>ActiveMQ.VST_ORDER.${jms_node}</value></property>
+
+	</bean>
+
+</beans>
+
